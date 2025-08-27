@@ -1,0 +1,114 @@
+{% extends "quiz/base.html" %}
+{% block content %}
+<div class="container my-5">
+  <h1>Quiz History</h1>
+  
+  {% if page_obj %}
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Quiz</th>
+          <th>Category</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in page_obj %}
+        <tr>
+          <td>{{ attempt.quiz.title }}</td>
+          <td><span class="badge bg-secondary">{{ attempt.quiz.category.name }}</span></td>
+          <td>
+            <strong>{{ attempt.score }}</strong> / {{ attempt.max_score }}
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar" role="progressbar" 
+                   style="width: {{ attempt.percentage }}%;" 
+                   aria-valuenow="{{ attempt.percentage }}" 
+                   aria-valuemin="0" 
+                   aria-valuemax="100">
+              </div>
+            </div>
+          </td>
+          <td>{{ attempt.completed_at|date:"M d, Y H:i" }}</td>
+          <td>
+            <a href="{% url 'quiz_detail' attempt.quiz.id %}" class="btn btn-sm btn-outline-primary">Retake</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="History pagination">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page=1">First</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        </li>
+      {% endif %}
+      
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+      
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+  {% else %}
+  <div class="alert alert-dark">
+    <h4>No quiz attempts yet</h4>
+    <p>You haven't taken any quizzes yet. <a href="{% url 'quiz_list' %}">Take a quiz now</a> to see your progress!</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.progress {
+  margin-top: 5px;
+  background-color: #252525;
+}
+
+.progress-bar {
+  background-color: #008080;
+}
+
+.table {
+  color: #e0e0e0;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: #1e1e1e;
+}
+
+.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: #252525;
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: #2a2a2a;
+}
+</style>
+{% endblock %}

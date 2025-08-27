@@ -1,0 +1,200 @@
+{% extends "quiz/base.html" %}
+{% block content %}
+<div class="container my-5">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'quiz_list' %}">Quizzes</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ quiz.title }}</li>
+    </ol>
+  </nav>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h2>{{ quiz.title }}</h2>
+          <p class="text-muted mb-0">{{ quiz.category.name }} Quiz</p>
+        </div>
+        <div class="card-body">
+          <form id="quiz-form" method="post" action="{% url 'submit' %}">
+            {% csrf_token %}
+            <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+            
+            {% for question in quiz.questions.all %}
+            <div class="card mb-4 question-card">
+              <div class="card-header">
+                <h5>Question {{ forloop.counter }} of {{ quiz.questions.count }}</h5>
+              </div>
+              <div class="card-body">
+                <p class="lead">{{ question.text }}</p>
+                <div class="options-container">
+                  {% for opt in question.options.all %}
+                  <div class="option-item mb-2">
+                    <input class="form-check-input" type="radio" name="{{ question.id }}" id="opt{{ opt.id }}" value="{{ opt.id }}" required>
+                    <label class="form-check-label h6" for="opt{{ opt.id }}">{{ opt.text }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-success btn-lg">Submit Answers</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>Quiz Information</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Category:</strong> {{ quiz.category.name }}</p>
+          <p><strong>Questions:</strong> {{ quiz.questions.count }}</p>
+          <p><strong>Difficulty:</strong> 
+            {% if quiz.questions.count > 0 %}
+              {% with first_question=quiz.questions.first %}
+                {% if first_question.difficulty == 'hard' %}
+                  <span class="badge bg-danger">Hard</span>
+                {% elif first_question.difficulty == 'medium' %}
+                  <span class="badge bg-warning text-dark">Medium</span>
+                {% else %}
+                  <span class="badge bg-success">Easy</span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <span class="badge bg-secondary">Not Available</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5>Progress</h5>
+        </div>
+        <div class="card-body">
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+          </div>
+          <p class="mt-2 text-center"><span id="answered-count">0</span> of {{ quiz.questions.count }} answered</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.question-card {
+  transition: all 0.3s ease;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.option-item {
+  padding: 15px 20px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid #333;
+  cursor: pointer;
+  margin-bottom: 12px;
+  user-select: none;
+  min-height: 50px;
+}
+
+.option-item:hover {
+  background-color: #2a2a2a;
+  border-color: #008080;
+}
+
+.option-item.active {
+  background-color: #004444;
+  border-color: #00cccc;
+}
+
+.form-check-input {
+  display: none;
+}
+
+.form-check-label {
+  width: 100%;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.form-check-input:checked + .form-check-label {
+  color: #00cccc;
+  font-weight: bold;
+}
+
+.progress {
+  background-color: #252525;
+}
+
+.progress-bar {
+  background-color: #008080;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Update progress as user answers questions
+  const radioButtons = document.querySelectorAll('input[type="radio"]');
+  const optionItems = document.querySelectorAll('.option-item');
+  const progressBar = document.querySelector('.progress-bar');
+  const answeredCount = document.getElementById('answered-count');
+  const totalQuestions = {{ quiz.questions.count }};
+  
+  // Add click event to option items for better UX
+  optionItems.forEach(item => {
+    item.addEventListener('click', function(e) {
+      // Find the radio button inside this option
+      const radio = this.querySelector('input[type="radio"]');
+      if (radio) {
+        // Set the radio as checked
+        radio.checked = true;
+        // Trigger the change event
+        radio.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+  
+  // Update when radio buttons change
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Remove active class from all options in this question
+      document.querySelectorAll(`input[name="${this.name}"]`).forEach(radioInput => {
+        radioInput.closest('.option-item').classList.remove('active');
+      });
+      
+      // Add active class to the selected option
+      this.closest('.option-item').classList.add('active');
+      
+      updateProgress();
+    });
+  });
+  
+  function updateProgress() {
+    const answeredQuestions = new Set();
+    
+    radioButtons.forEach(radio => {
+      if (radio.checked) {
+        // Get the question ID from the radio button name
+        answeredQuestions.add(radio.name);
+      }
+    });
+    
+    const answered = answeredQuestions.size;
+    const percentage = (answered / totalQuestions) * 100;
+    
+    progressBar.style.width = percentage + '%';
+    progressBar.textContent = Math.round(percentage) + '%';
+    progressBar.setAttribute('aria-valuenow', percentage);
+    answeredCount.textContent = answered;
+  }
+});
+</script>
+{% endblock %}

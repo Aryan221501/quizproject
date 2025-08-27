@@ -1,0 +1,8 @@
+{% extends "quiz/base.html" %}
+{% block content %}
+<div class="alert alert-info">
+  <h4>No quizzes available</h4>
+  <p>There are currently no quizzes available. Please check back later.</p>
+  <a href="{% url 'quiz' %}" class="btn btn-primary">Refresh</a>
+</div>
+{% endblock %}

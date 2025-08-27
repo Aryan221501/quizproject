@@ -1,14 +1,20 @@
 {% extends "quiz/base.html" %}
 {% block content %}
+{% if quiz %}
 <form id="quiz-form" method="post" action="{% url 'submit' %}">
   {% csrf_token %}
-  {% for q in questions %}
+  <input type="hidden" name="quiz_id" value="{{ quiz.id }}">
+  <h2 class="mb-4">{{ quiz.title }}</h2>
+  <p class="text-muted">Category: {{ quiz.category.name }}</p>
+  
+  {% for question in quiz.questions.all %}
   <div class="card mb-3">
     <div class="card-body">
-      <h5>Q{{ forloop.counter }}. {{ q.text }}</h5>
-      {% for opt in q.options.all %}
+      <h5>Q{{ forloop.counter }}. {{ question.text }}</h5>
+      <p class="text-muted">Difficulty: {{ question.get_difficulty_display }}</p>
+      {% for opt in question.options.all %}
       <div class="form-check">
-        <input class="form-check-input" type="radio" name="{{ q.id }}" id="opt{{ opt.id }}" value="{{ opt.id }}">
+        <input class="form-check-input" type="radio" name="{{ question.id }}" id="opt{{ opt.id }}" value="{{ opt.id }}" required>
         <label class="form-check-label" for="opt{{ opt.id }}">{{ opt.text }}</label>
       </div>
       {% endfor %}
@@ -17,4 +23,11 @@
   {% endfor %}
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+{% else %}
+<div class="alert alert-info">
+  <h4>No quizzes available</h4>
+  <p>There are currently no quizzes available. Please check back later or contact the administrator.</p>
+  <a href="{% url 'quiz' %}" class="btn btn-primary">Refresh</a>
+</div>
+{% endif %}
 {% endblock %}

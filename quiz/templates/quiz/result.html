@@ -1,10 +1,208 @@
 {% extends "quiz/base.html" %}
 {% block content %}
-<div class="card">
-  <div class="card-body">
-    <h4>Your Score</h4>
-    <p class="lead">You scored <strong>{{ score }}</strong> out of <strong>{{ total }}</strong></p>
-    <a href="{% url 'quiz' %}" class="btn btn-secondary">Try Again</a>
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card text-center">
+        <div class="card-header">
+          <h2>Quiz Results</h2>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">{{ quiz.title }}</h3>
+          
+          <div class="result-display mx-auto mb-4">
+            <div class="score-circle">
+              <svg width="200" height="200" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#333" stroke-width="10"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#008080" stroke-width="10" 
+                        stroke-dasharray="565.48" stroke-dashoffset="565.48" transform="rotate(-90 100 100)"
+                        class="progress-circle"/>
+              </svg>
+              <div class="score-text">
+                <span class="score-value">{{ score }}</span>
+                <span class="score-total">/{{ total }}</span>
+                <div class="percentage">{{ percentage|floatformat:1 }}%</div>
+              </div>
+            </div>
+          </div>
+          
+          <h4 class="mb-3">
+            {% if percentage >= 80 %}
+              Excellent! 🎉
+            {% elif percentage >= 60 %}
+              Good Job! 👍
+            {% elif percentage >= 40 %}
+              Not Bad! 👌
+            {% else %}
+              Keep Trying! 💪
+            {% endif %}
+          </h4>
+          
+          <p class="lead">
+            You scored <strong>{{ score }}</strong> out of <strong>{{ total }}</strong> 
+            ({{ percentage|floatformat:1 }}%)
+          </p>
+          
+          <div class="mt-4">
+            <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-primary btn-lg me-2">Retake Quiz</a>
+            <a href="{% url 'quiz_list' %}" class="btn btn-secondary btn-lg">View All Quizzes</a>
+          </div>
+        </div>
+        <div class="card-footer text-muted">
+          Completed on {{ now|date:"F d, Y \\a\\t H:i" }}
+        </div>
+      </div>
+      
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5>Performance Analysis</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="performanceChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Calculate percentage
+  const score = {{ score }};
+  const total = {{ total }};
+  const percentage = (score / total * 100);
+  
+  // Animate the progress circle
+  const circumference = 2 * Math.PI * 90;
+  const offset = circumference - (percentage / 100) * circumference;
+  const progressCircle = document.querySelector('.progress-circle');
+  
+  // Set initial state
+  progressCircle.style.strokeDasharray = circumference;
+  progressCircle.style.strokeDashoffset = circumference;
+  
+  // Animate to final state
+  setTimeout(() => {
+    progressCircle.style.transition = 'stroke-dashoffset 1s ease-in-out';
+    progressCircle.style.strokeDashoffset = offset;
+  }, 100);
+  
+  // Initialize performance chart
+  const ctx = document.getElementById('performanceChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Your Score', 'Average Score', 'Top Score'],
+      datasets: [{
+        label: 'Score (%)',
+        data: [percentage, 75, 95],
+        backgroundColor: [
+          'rgba(0, 128, 128, 0.2)',
+          'rgba(0, 102, 102, 0.2)',
+          'rgba(255, 193, 7, 0.2)'
+        ],
+        borderColor: [
+          'rgba(0, 128, 128, 1)',
+          'rgba(0, 102, 102, 1)',
+          'rgba(255, 193, 7, 1)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: '#e0e0e0'
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: '#e0e0e0'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#e0e0e0'
+          }
+        }
+      }
+    }
+  });
+});
+</script>
+
+<style>
+.result-display {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.score-circle {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background-color: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #e0e0e0;
+}
+
+.score-value {
+  font-size: 48px;
+  font-weight: bold;
+  color: #00cccc;
+}
+
+.score-total {
+  font-size: 24px;
+  color: #aaa;
+}
+
+.percentage {
+  font-size: 20px;
+  color: #00cccc;
+  margin-top: 5px;
+}
+
+.card {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.card-header {
+  background-color: #252525;
+  border-bottom: 1px solid #333;
+}
+
+.progress-circle {
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+</style>
 {% endblock %}

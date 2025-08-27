@@ -1,0 +1,210 @@
+{% extends "quiz/base.html" %}
+{% block content %}
+<div class="jumbotron rounded-0">
+  <div class="container py-5">
+    <h1 class="display-4">Welcome to QuizMaster!</h1>
+    <p class="lead">Test your knowledge across multiple subjects and track your progress over time.</p>
+  </div>
+</div>
+
+<div class="container my-5">
+  <div class="row">
+    <div class="col-md-8">
+      <h2>Available Quiz Categories</h2>
+      <div class="row">
+        {% for category in categories %}
+        <div class="col-md-6 mb-4">
+          <div class="card category-card h-100">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title">{{ category.name }}</h5>
+              <p class="card-text flex-grow-1">{{ category.quizzes.count }} quizzes available</p>
+              <a href="#" class="btn btn-primary mt-auto view-quizzes" data-category="{{ category.id }}">View Quizzes</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>Your Progress</h5>
+        </div>
+        <div class="card-body">
+          {% if latest_attempts %}
+          <h6>Recent Attempts</h6>
+          <ul class="list-group list-group-flush">
+            {% for attempt in latest_attempts|slice:":5" %}
+            <li class="list-group-item bg-dark">
+              <div class="d-flex justify-content-between">
+                <span>{{ attempt.quiz.title }}</span>
+                <span class="badge bg-primary">{{ attempt.score }}/{{ attempt.quiz.questions.count }}</span>
+              </div>
+              <small class="text-muted">{{ attempt.completed_at|date:"M d, Y" }}</small>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p>No quiz attempts yet. Take your first quiz to see progress!</p>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5>Statistics</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="progressChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row mt-5" id="quizzes-section" style="display: none;">
+    <div class="col-12">
+      <h3 id="category-title">Category Quizzes</h3>
+      <div id="quizzes-container" class="row">
+        <!-- Quizzes will be loaded here dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js for graphs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add hover effect to category cards
+  const categoryCards = document.querySelectorAll('.category-card');
+  categoryCards.forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.classList.add('shadow');
+    });
+    card.addEventListener('mouseleave', function() {
+      this.classList.remove('shadow');
+    });
+  });
+  
+  // View quizzes button functionality
+  const viewButtons = document.querySelectorAll('.view-quizzes');
+  viewButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const categoryId = this.getAttribute('data-category');
+      loadQuizzes(categoryId);
+    });
+  });
+  
+  // Initialize progress chart
+  initProgressChart();
+});
+
+function loadQuizzes(categoryId) {
+  fetch(`/api/categories/${categoryId}/`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('category-title').textContent = data.name + ' Quizzes';
+      const container = document.getElementById('quizzes-container');
+      container.innerHTML = '';
+      
+      data.quizzes.forEach(quiz => {
+        const quizElement = `
+          <div class="col-md-4 mb-4">
+            <div class="card quiz-card h-100">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">${quiz.title}</h5>
+                <p class="card-text flex-grow-1">${quiz.questions.length} questions</p>
+                <a href="/quiz/${quiz.id}/" class="btn btn-success mt-auto">Start Quiz</a>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += quizElement;
+      });
+      
+      document.getElementById('quizzes-section').style.display = 'block';
+      
+      // Scroll to quizzes section
+      document.getElementById('quizzes-section').scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+function initProgressChart() {
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4', 'Quiz 5'],
+      datasets: [{
+        label: 'Your Score',
+        data: [60, 75, 65, 80, 85],
+        borderColor: 'rgb(0, 128, 128)',
+        backgroundColor: 'rgba(0, 128, 128, 0.2)',
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: '#e0e0e0'
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: '#e0e0e0'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#e0e0e0'
+          }
+        }
+      }
+    }
+  });
+}
+</script>
+
+<style>
+.category-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  border-color: #008080;
+}
+
+.quiz-card {
+  transition: transform 0.3s ease;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.quiz-card:hover {
+  transform: translateY(-3px);
+  border-color: #006666;
+}
+
+.list-group-item {
+  background-color: #1e1e1e !important;
+  border: 1px solid #333 !important;
+}
+</style>
+{% endblock %}

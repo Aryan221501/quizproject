@@ -1,0 +1,101 @@
+{% extends "quiz/base.html" %}
+{% block content %}
+<div class="container my-5">
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="rounded-circle bg-dark text-white mx-auto d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; font-size: 2rem; border: 2px solid #008080;">
+            {{ user.username|first|upper }}
+          </div>
+          <h3 class="mt-3">{{ user.username }}</h3>
+          <p class="text-muted">Member since {{ user.date_joined|date:"M Y" }}</p>
+        </div>
+      </div>
+      
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5>Statistics</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <span>Total Quizzes:</span>
+            <strong>{{ total_quizzes }}</strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Average Score:</span>
+            <strong>{{ avg_score|floatformat:1 }}%</strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Best Score:</span>
+            <strong>{{ best_score }}%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-8">
+      <h2>Profile Overview</h2>
+      
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">{{ total_quizzes }}</h5>
+              <p class="card-text">Quizzes Taken</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">{{ avg_score|floatformat:1 }}%</h5>
+              <p class="card-text">Average Score</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title">{{ best_score }}%</h5>
+              <p class="card-text">Best Score</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <h3>Recent Activity</h3>
+      {% if attempts %}
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Quiz</th>
+              <th>Score</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for attempt in attempts|slice:":5" %}
+            <tr>
+              <td>{{ attempt.quiz.title }}</td>
+              <td>
+                {{ attempt.score }} / {{ attempt.quiz.questions.count }}
+                ({{ attempt.score|floatratio:attempt.quiz.questions.count|mul:100|floatformat:0 }}%)
+              </td>
+              <td>{{ attempt.completed_at|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <a href="{% url 'quiz_history' %}" class="btn btn-outline-primary">View Full History</a>
+      {% else %}
+      <div class="alert alert-dark">
+        <p>You haven't taken any quizzes yet. <a href="{% url 'quiz_list' %}">Take a quiz now</a> to see your progress!</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

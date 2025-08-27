@@ -30,9 +30,11 @@
                 <p class="lead">{{ question.text }}</p>
                 <div class="options-container">
                   {% for opt in question.options.all %}
-                  <div class="option-item mb-2">
-                    <input class="form-check-input" type="radio" name="{{ question.id }}" id="opt{{ opt.id }}" value="{{ opt.id }}" required>
-                    <label class="form-check-label h6" for="opt{{ opt.id }}">{{ opt.text }}</label>
+                  <div class="option-item">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="{{ question.id }}" id="opt{{ opt.id }}" value="{{ opt.id }}" required>
+                      <label class="form-check-label h6" for="opt{{ opt.id }}">{{ opt.text }}</label>
+                    </div>
                   </div>
                   {% endfor %}
                 </div>
@@ -103,6 +105,9 @@
   margin-bottom: 12px;
   user-select: none;
   min-height: 50px;
+  display: block; /* Ensure it's a block element */
+  width: 100%; /* Full width */
+  box-sizing: border-box; /* Include padding in width */
 }
 
 .option-item:hover {
@@ -115,6 +120,12 @@
   border-color: #00cccc;
 }
 
+.form-check {
+  width: 100%;
+  margin-bottom: 0;
+  padding: 5px 0;
+}
+
 .form-check-input {
   display: none;
 }
@@ -123,6 +134,7 @@
   width: 100%;
   cursor: pointer;
   margin-bottom: 0;
+  display: block; /* Make label a block element */
 }
 
 .form-check-input:checked + .form-check-label {
@@ -151,31 +163,43 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add click event to option items for better UX
   optionItems.forEach(item => {
     item.addEventListener('click', function(e) {
+      console.log('Option item clicked');
       // Find the radio button inside this option
       const radio = this.querySelector('input[type="radio"]');
       if (radio) {
+        console.log('Radio found, setting checked');
         // Set the radio as checked
         radio.checked = true;
-        // Trigger the change event
-        radio.dispatchEvent(new Event('change'));
+        // Manually update the UI
+        updateOptionSelection(radio);
+        // Update progress
+        updateProgress();
+      } else {
+        console.log('No radio found');
       }
     });
   });
   
-  // Update when radio buttons change
+  // Also listen for direct radio changes (keyboard navigation)
   radioButtons.forEach(radio => {
     radio.addEventListener('change', function() {
-      // Remove active class from all options in this question
-      document.querySelectorAll(`input[name="${this.name}"]`).forEach(radioInput => {
-        radioInput.closest('.option-item').classList.remove('active');
-      });
-      
-      // Add active class to the selected option
-      this.closest('.option-item').classList.add('active');
-      
+      console.log('Radio changed');
+      updateOptionSelection(this);
       updateProgress();
     });
   });
+  
+  // Function to update option selection UI
+  function updateOptionSelection(radio) {
+    console.log('Updating selection for radio:', radio.name);
+    // Remove active class from all options in this question
+    document.querySelectorAll(`input[name="${radio.name}"]`).forEach(radioInput => {
+      radioInput.closest('.option-item').classList.remove('active');
+    });
+    
+    // Add active class to the selected option
+    radio.closest('.option-item').classList.add('active');
+  }
   
   function updateProgress() {
     const answeredQuestions = new Set();
